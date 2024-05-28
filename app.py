@@ -18,15 +18,15 @@ DB_PORT = "5432"
 logging.basicConfig(level=logging.INFO)
 
 def create_connection():
-    retry_count = 100
+    retry_count = 5
     while retry_count > 0:
         try:
             conn = psycopg2.connect(
-                dbname=DB_NAME,
-                user=DB_USER,
-                password=DB_PASS,
-                host=DB_HOST,
-                port=DB_PORT
+                dbname1=DB_NAME,
+                user2=DB_USER,
+                password3=DB_PASS,
+                host4=DB_HOST,
+                port5=DB_PORT
             )
             return conn
         except OperationalError as e:
