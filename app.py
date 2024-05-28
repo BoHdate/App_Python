@@ -22,11 +22,11 @@ def create_connection():
     while retry_count > 0:
         try:
             conn = psycopg2.connect(
-                dbname1=DB_NAME,
-                user2=DB_USER,
-                password3=DB_PASS,
-                host4=DB_HOST,
-                port5=DB_PORT
+                dbname=DB_NAME,
+                user=DB_USER,
+                password=DB_PASS,
+                host=DB_HOST,
+                port=DB_PORT
             )
             return conn
         except OperationalError as e:
