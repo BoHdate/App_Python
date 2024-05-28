@@ -10,15 +10,11 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - mynetwork
 
   web:
     build: .
-    environment:
-      DB_NAME: mydb
-      DB_USER: user
-      DB_PASS: password
-      DB_HOST: db
-      DB_PORT: 5432
 
     restart: always
 
@@ -26,8 +22,12 @@ services:
       - "80:80"
     depends_on:
       - db
+    networks:
+      - mynetwork
 
 volumes:
   pgdata:
 
 
+networks:
+  mynetwork:
