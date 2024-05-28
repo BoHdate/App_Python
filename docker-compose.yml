@@ -5,13 +5,10 @@ services:
       POSTGRES_DB: mydb
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_HOST: db
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-    networks:
-      - mynetwork
 
   web:
     build: .
@@ -22,12 +19,8 @@ services:
       - "80:80"
     depends_on:
       - db
-    networks:
-      - mynetwork
 
 volumes:
   pgdata:
 
 
-networks:
-  mynetwork:
