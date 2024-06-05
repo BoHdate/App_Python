@@ -48,8 +48,13 @@ deploy:
     - apk add --no-cache openssh
     # Запуск SSH агента
     - eval $(ssh-agent -s)
-    # Додавання приватного SSH ключа до агента SSH
-    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    # Обробка приватного SSH ключа
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | tr -d ' ' > /tmp/ssh_private_key
+    - chmod 600 /tmp/ssh_private_key
+    - ssh-add /tmp/ssh_private_key
+    # Додавання хоста до відомих хостів
+    - mkdir -p ~/.ssh
+    - ssh-keyscan $EC2_HOST >> ~/.ssh/known_hosts
   script:
     # Перевірка з'єднання з сервером
     - ssh -o StrictHostKeyChecking=no ubuntu@$EC2_HOST "echo Connected successfully"
