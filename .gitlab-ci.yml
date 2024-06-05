@@ -1,5 +1,4 @@
 stages:
-  - check_secrets
   - build
   - test
   - deploy
@@ -7,37 +6,23 @@ stages:
 variables:
   DOCKER_DRIVER: overlay2
 
-.check_secrets:
-  stage: check_secrets
-  script:
-    - echo "Перевірка секретів:"
-    - echo "AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}"
-    - echo "AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}"
-    - echo "EC2_HOST: ${EC2_HOST}"
-    - echo "ECR_REGISTRY: ${ECR_REGISTRY}"
-    - echo "ECR_REPOSITORY: ${ECR_REPOSITORY}"
-    - echo "SSH_PRIVATE_KEY: $(echo ${SSH_PRIVATE_KEY} | sed 's/./*/g')"
-
 build:
   stage: build
   image: docker:latest
   services:
     - docker:dind
   before_script:
-    - |
-      echo "Перевірка секретів:"
-      echo "AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}"
-      echo "AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}"
-      echo "EC2_HOST: ${EC2_HOST}"
-      echo "ECR_REGISTRY: ${ECR_REGISTRY}"
-      echo "ECR_REPOSITORY: ${ECR_REPOSITORY}"
-      echo "SSH_PRIVATE_KEY: $(echo ${SSH_PRIVATE_KEY} | sed 's/./*/g')"
-      docker run --rm -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} -e AWS_DEFAULT_REGION=eu-north-1 amazon/aws-cli ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+    # Використання AWS CLI Docker контейнера для логіну до ECR
+    - docker run --rm -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION=eu-north-1 amazon/aws-cli ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
   script:
+    # Перевірка логіну
     - echo "Docker login succeeded"
-    - docker build -t ${ECR_REPOSITORY}:latest .
-    - docker tag ${ECR_REPOSITORY}:latest ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
-    - docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
+    # Збірка Docker образу
+    - docker build -t $ECR_REPOSITORY:latest .
+    # Тегування Docker образу
+    - docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:latest
+    # Пуш Docker образу до ECR
+    - docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
 test:
   stage: test
@@ -45,33 +30,37 @@ test:
   services:
     - docker:dind
   before_script:
-    - |
-      echo "Перевірка секретів:"
-      echo "AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}"
-      echo "AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}"
-      echo "EC2_HOST: ${EC2_HOST}"
-      echo "ECR_REGISTRY: ${ECR_REGISTRY}"
-      echo "ECR_REPOSITORY: ${ECR_REPOSITORY}"
-      echo "SSH_PRIVATE_KEY: $(echo ${SSH_PRIVATE_KEY} | sed 's/./*/g')"
-      docker run --rm -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} -e AWS_DEFAULT_REGION=eu-north-1 amazon/aws-cli ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+    # Використання AWS CLI Docker контейнера для логіну до ECR
+    - docker run --rm -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION=eu-north-1 amazon/aws-cli ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
   script:
-    - docker pull ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
-    - docker run --rm ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest python -c "print('Test Successful')"
+    # Витягування Docker образу
+    - docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest
+    # Запуск контейнера для тестування
+    - docker run --rm $ECR_REGISTRY/$ECR_REPOSITORY:latest python -c "print('Test Successful')"
+    # Додайте тут більше команд для тестування вашого образу
+    # Наприклад, ви можете виконати тести вашого додатку всередині контейнера
 
 deploy:
   stage: deploy
-  image: ubuntu:latest
+  image: alpine:latest
   before_script:
-    - |
-      apk add --no-cache openssh
-      eval $(ssh-agent -s)
-      echo -e "${SSH_PRIVATE_KEY}" > /.ssh/ssh_private_key
-      chmod 600 /.ssh/ssh_private_key
-      ssh-add /.ssh/ssh_private_key
-      mkdir -p ~/.ssh
-      ssh-keyscan ${EC2_HOST} >> ~/.ssh/known_hosts
+    # Встановлення SSH клієнта
+    - apk add --no-cache openssh
+    # Запуск SSH агента
+    - eval $(ssh-agent -s)
+    # Обробка приватного SSH ключа
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | tr -d ' ' > /.ssh/ssh_private_key
+    - chmod 600 /.ssh/ssh_private_key
+    - ssh-add /.ssh/ssh_private_key
+    # Додавання хоста до відомих хостів
+    - mkdir -p ~/.ssh
+    - ssh-keyscan $EC2_HOST >> ~/.ssh/known_hosts
   script:
-    - ssh -o StrictHostKeyChecking=no ubuntu@${EC2_HOST} "echo Connected successfully"
-    - ssh -o StrictHostKeyChecking=no ubuntu@${EC2_HOST} 'AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_DEFAULT_REGION=us-west-2 docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION amazon/aws-cli ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin ${ECR_REGISTRY}'
-    - ssh -o StrictHostKeyChecking=no ubuntu@${EC2_HOST} 'docker pull ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest'
-    - ssh -o StrictHostKeyChecking=no ubuntu@${EC2_HOST} 'docker-compose up -d'
+    # Перевірка з'єднання з сервером
+    - ssh -o StrictHostKeyChecking=no ubuntu@$EC2_HOST "echo Connected successfully"
+    # Логін до ECR на сервері за допомогою AWS CLI Docker контейнера
+    - ssh -o StrictHostKeyChecking=no ubuntu@$EC2_HOST 'AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION=us-west-2 docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION amazon/aws-cli ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin $ECR_REGISTRY'
+    # Витягування Docker образу на сервері
+    - ssh -o StrictHostKeyChecking=no ubuntu@$EC2_HOST 'docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest'
+    # Оновлення Docker контейнерів за допомогою Docker Compose
+    - ssh -o StrictHostKeyChecking=no ubuntu@$EC2_HOST 'docker-compose up -d'
