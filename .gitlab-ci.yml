@@ -24,7 +24,7 @@ build:
     - docker:dind
   script:
     # Логін до ECR
-    - docker login -u AWS -p $(aws ecr get-login-password --region us-west-2) $ECR_REGISTRY
+    - aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
     # Перевірка логіну
     - echo "Docker login succeeded"
     # Збірка Docker образу
@@ -41,7 +41,7 @@ test:
     - docker:dind
   script:
     # Логін до ECR
-    - docker login -u AWS -p $(aws ecr get-login-password --region us-west-2) $ECR_REGISTRY
+    - aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
     # Витягування Docker образу
     - docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest
     # Запуск контейнера для тестування
