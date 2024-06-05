@@ -6,10 +6,17 @@ variables:
   DOCKER_DRIVER: overlay2
 
 before_script:
+  # Встановлення curl
   - apk add --no-cache curl
+  # Завантаження AWS CLI
   - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+  # Розпакування AWS CLI
   - unzip awscliv2.zip
+  # Встановлення AWS CLI
   - sudo ./aws/install
+  # Перевірка встановлення AWS CLI
+  - aws --version
+  # Конфігурація AWS CLI
   - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
   - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
   - aws configure set default.region us-west-2
@@ -20,17 +27,33 @@ build:
   services:
     - docker:dind
   script:
+    # Логін до ECR
     - docker login -u AWS -p $(aws ecr get-login-password --region us-west-2) $ECR_REGISTRY
+    # Перевірка логіну
+    - echo "Docker login succeeded"
+    # Збірка Docker образу
     - docker build -t $ECR_REPOSITORY:latest .
+    # Тегування Docker образу
     - docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:latest
+    # Пуш Docker образу до ECR
     - docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
 deploy:
   stage: deploy
   image: alpine:latest
   before_script:
+    # Встановлення SSH клієнта
     - apk add --no-cache openssh
+    # Запуск SSH агента
     - eval $(ssh-agent -s)
+    # Додавання приватного SSH ключа до агента SSH
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
   script:
-    - ssh -o StrictHostKeyChecking=no ubuntu@$EC2_HOST 'aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin $ECR_REGISTRY && docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest && docker-compose up -d'
+    # Перевірка з'єднання з сервером
+    - ssh -o StrictHostKeyChecking=no ubuntu@$EC2_HOST "echo Connected successfully"
+    # Логін до ECR на сервері
+    - ssh -o StrictHostKeyChecking=no ubuntu@$EC2_HOST 'aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin $ECR_REGISTRY'
+    # Витягування Docker образу на сервері
+    - ssh -o StrictHostKeyChecking=no ubuntu@$EC2_HOST 'docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest'
+    # Оновлення Docker контейнерів за допомогою Docker Compose
+    - ssh -o StrictHostKeyChecking=no ubuntu@$EC2_HOST 'docker-compose up -d'
