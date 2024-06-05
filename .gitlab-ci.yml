@@ -14,7 +14,7 @@ before_script:
   # Розпакування AWS CLI
   - unzip awscliv2.zip
   # Встановлення AWS CLI
-  - ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
+  - sudo ./aws/install
   # Перевірка встановлення AWS CLI
   - aws --version
   # Конфігурація AWS CLI
