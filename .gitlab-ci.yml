@@ -39,6 +39,21 @@ build:
     # Пуш Docker образу до ECR
     - docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
+test:
+  stage: test
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    # Логін до ECR
+    - aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
+    # Витягування Docker образу
+    - docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest
+    # Запуск контейнера для тестування
+    - docker run --rm $ECR_REGISTRY/$ECR_REPOSITORY:latest python -c "print('Test Successful')"
+    # Додайте тут більше команд для тестування вашого образу
+    # Наприклад, ви можете виконати тести вашого додатку всередині контейнера
+
 deploy:
   stage: deploy
   image: alpine:latest
