@@ -7,9 +7,14 @@ variables:
   DOCKER_DRIVER: overlay2
 
 before_script:
-  # Встановлення AWS CLI
-  - snap install aws-cli --classic
-
+  # Встановлення curl і unzip
+  - apt-get update && apt-get install -y curl unzip
+  # Завантаження AWS CLI
+  - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+  # Розпакування AWS CLI
+  - unzip awscliv2.zip
+  # Встановлення AWS CLI без використання sudo
+  - ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
   # Перевірка встановлення AWS CLI
   - aws --version
   # Конфігурація AWS CLI
