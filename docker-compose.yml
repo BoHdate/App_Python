@@ -1,26 +1,20 @@
-version: '3'
 services:
-  web:
-    image: 767397966663.dkr.ecr.eu-north-1.amazonaws.com/app_py:latest
+  app:
+    image: <your-ecr-repository-uri>:latest
     ports:
       - "80:80"
     environment:
-      - DB_HOST=db
       - DB_NAME=mydb
       - DB_USER=user
       - DB_PASS=password
-    depends_on:
-      - db
+      - DB_HOST=db
+      - DB_PORT=5432
+
   db:
-    image: postgres:latest
+    image: postgres:13
     environment:
       POSTGRES_DB: mydb
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
     ports:
       - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-volumes:
-  pgdata:
