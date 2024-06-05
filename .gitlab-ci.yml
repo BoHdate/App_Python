@@ -1,5 +1,6 @@
 stages:
   - build
+  - test
   - deploy
 
 variables:
@@ -13,7 +14,7 @@ before_script:
   # Розпакування AWS CLI
   - unzip awscliv2.zip
   # Встановлення AWS CLI
-  - sudo ./aws/install
+  - ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
   # Перевірка встановлення AWS CLI
   - aws --version
   # Конфігурація AWS CLI
@@ -37,6 +38,21 @@ build:
     - docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:latest
     # Пуш Docker образу до ECR
     - docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+test:
+  stage: test
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    # Логін до ECR
+    - docker login -u AWS -p $(aws ecr get-login-password --region us-west-2) $ECR_REGISTRY
+    # Витягування Docker образу
+    - docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest
+    # Запуск контейнера для тестування
+    - docker run --rm $ECR_REGISTRY/$ECR_REPOSITORY:latest python -c "print('Test Successful')"
+    # Додайте тут більше команд для тестування вашого образу
+    # Наприклад, ви можете виконати тести вашого додатку всередині контейнера
 
 deploy:
   stage: deploy
