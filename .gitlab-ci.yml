@@ -46,12 +46,10 @@ deploy:
   before_script:
     # Встановлення SSH клієнта
     - apk add --no-cache openssh
-    # Запуск SSH агента
-    - eval $(ssh-agent -s)
     # Обробка приватного SSH ключа
-    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | tr -d ' ' > /.ssh/ssh_private_key
-    - chmod 600 /.ssh/ssh_private_key
-    - ssh-add /.ssh/ssh_private_key
+    - echo "$SSH_PRIVATE_KEY" > private_key.pem
+    - chmod 600 private_key.pem
+    - ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@$EC2_HOST
     # Додавання хоста до відомих хостів
     - mkdir -p ~/.ssh
     - ssh-keyscan $EC2_HOST >> ~/.ssh/known_hosts
