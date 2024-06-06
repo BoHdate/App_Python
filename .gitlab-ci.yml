@@ -24,7 +24,7 @@ build:
     # Пуш Docker образу до ECR
     - docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-.test:
+test:
   stage: test
   image: docker:latest
   services:
@@ -43,17 +43,16 @@ build:
 deploy:
   stage: deploy
   image: alpine:latest
-  before_script:
+  script:
     # Встановлення SSH клієнта
     - apk add --no-cache openssh
     # Обробка приватного SSH ключа
     - echo "$SSH_PRIVATE_KEY" > private_key.pem
     - chmod 600 private_key.pem
-    - ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@$EC2_HOST
-  script:
-    # Логін до ECR на сервері за допомогою AWS CLI Docker контейнера
+    - ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@$EC2_HOST << 'EOF'
 
     # Витягування Docker образу на сервері
-    - ssh -o StrictHostKeyChecking=no ubuntu@$EC2_HOST 'docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest'
+    - docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest
     # Оновлення Docker контейнерів за допомогою Docker Compose
-    - ssh -o StrictHostKeyChecking=no ubuntu@$EC2_HOST 'docker-compose up -d'
+    - docker-compose up -d
+      EOF
