@@ -50,7 +50,7 @@ deploy:
     - echo "$SSH_PRIVATE_KEY" > private_key.pem
     - chmod 600 private_key.pem
     - ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@$EC2_HOST << 'EOF'
-    - aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
+    - aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 767397966663.dkr.ecr.eu-north-1.amazonaws.com
     - cd App_Py
     # Витягування Docker образу на сервері
     - docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest
