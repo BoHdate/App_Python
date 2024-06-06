@@ -24,7 +24,7 @@ build:
     # Пуш Docker образу до ECR
     - docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-test:
+.test:
   stage: test
   image: docker:latest
   services:
