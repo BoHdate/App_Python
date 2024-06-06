@@ -18,7 +18,7 @@ DB_PORT = "5432"
 logging.basicConfig(level=logging.INFO)
 
 def create_connection():
-    retry_count = 5
+    retry_count = 6
     while retry_count > 0:
         try:
             conn = psycopg2.connect(
