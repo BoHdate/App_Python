@@ -49,11 +49,10 @@ deploy:
     # Обробка приватного SSH ключа
     - echo "$SSH_PRIVATE_KEY" > private_key.pem
     - chmod 600 private_key.pem
-    - ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@$EC2_HOST << 'EOF'
+    - ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@$EC2_HOST s
     - aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 767397966663.dkr.ecr.eu-north-1.amazonaws.com
     - cd App_Py
     # Витягування Docker образу на сервері
     - docker pull 767397966663.dkr.ecr.eu-north-1.amazonaws.com/app_py:latest
     # Оновлення Docker контейнерів за допомогою Docker Compose
     - docker-compose up -d
-      EOF
