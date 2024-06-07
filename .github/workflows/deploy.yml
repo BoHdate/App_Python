@@ -72,4 +72,4 @@ jobs:
             cd App_Py &&
             yq e '.services.web.image = \"${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:latest\"' -i docker-compose.yml &&
             docker-compose down &&
-            docker-compose up -d"
+            docker-compose up -d" 
