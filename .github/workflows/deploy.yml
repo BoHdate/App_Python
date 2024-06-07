@@ -42,10 +42,15 @@ jobs:
         run: docker build -t ${{ secrets.ECR_REPOSITORY }}:latest .
 
       - name: Tag Docker image
-        run: docker tag ${{ secrets.ECR_REPOSITORY }}:latest ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:latest
+        run: |
+          TAG=Dev-${{ github.run_number }}
+          docker tag ${{ secrets.ECR_REPOSITORY }}:latest ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:$TAG
+          echo $TAG > image-tag.txt
 
       - name: Push Docker image to Amazon ECR
-        run: docker push ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:latest
+        run: |
+          TAG=$(cat image-tag.txt)
+          docker push ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:$TAG
 
   deploy:
     needs: build
@@ -71,6 +76,6 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.EC2_HOST }} "
             aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }} &&
             cd App_Py &&
-            yq e '.services.web.image = \"${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:latest\"' -i docker-compose.yml &&
+            yq e '.services.web.image = \"${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:Dev-${{ github.run_number }}\"' -i docker-compose.yml &&
             docker-compose down &&
             docker-compose up -d"
