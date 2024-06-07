@@ -38,4 +38,4 @@ deploy:
       aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin $ECR_REGISTRY &&
       cd App_Py &&
       docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest &&
-      docker-compose up -d"
+      # docker-compose up -d"
